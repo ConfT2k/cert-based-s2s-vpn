@@ -67,6 +67,37 @@
 
 > ⚠️ 정확한 비용은 [AWS Pricing Calculator](https://calculator.aws/)에서 확인하세요.
 
+### 비용 최적화: Short-Lived Certificate 모드 활용
+
+프로덕션 환경이 아니거나 비용 절감이 필요한 경우, **Short-Lived Certificate 모드**를 적극 활용하세요.
+
+| 모드 | 월 비용 | 인증서 유효기간 | 적합한 용도 |
+|------|---------|----------------|------------|
+| General-Purpose | $400/CA | 최대 10년 | 프로덕션, 장기 운영 |
+| Short-Lived | $50/CA | 최대 7일 | 개발/테스트, PoC, 비용 민감 환경 |
+
+**Short-Lived 모드 사용 시 고려사항:**
+- 인증서를 7일 이내로 갱신해야 함
+- 자동 갱신 스크립트 또는 Lambda 함수 구성 권장
+- VPN 연결 중단 없이 인증서 갱신 가능 (동일 CA 체인 사용 시)
+
+```bash
+# Short-Lived 모드로 Private CA 생성 (AWS CLI)
+aws acm-pca create-certificate-authority \
+  --certificate-authority-configuration '{
+    "KeyAlgorithm": "RSA_2048",
+    "SigningAlgorithm": "SHA256WITHRSA",
+    "Subject": {
+      "CommonName": "MyOrg Short-Lived CA",
+      "Organization": "MyOrganization",
+      "Country": "KR"
+    }
+  }' \
+  --certificate-authority-type "SUBORDINATE" \
+  --usage-mode SHORT_LIVED_CERTIFICATE \
+  --tags Key=Purpose,Value=VPN-ShortLived
+```
+
 ---
 
 # Part 1: AWS Console 구성
@@ -225,6 +256,32 @@ aws iam create-service-linked-role --aws-service-name s2svpn.amazonaws.com
 
 Customer Gateway는 온프레미스 라우터(Cisco CSR)를 AWS에 등록하는 리소스입니다.
 인증서 기반이므로 IP 주소를 비워두고 인증서 ARN을 지정합니다.
+
+### 인증서 ARN 제약사항 (중요)
+
+Customer Gateway에서 사용할 인증서는 다음 제약사항을 **반드시** 준수해야 합니다:
+
+| 제약사항 | 설명 |
+|---------|------|
+| **리전 일치 필수** | 인증서는 Customer Gateway를 생성할 리전과 **동일한 리전**의 ACM에 있어야 함 |
+| **AWS Private CA 전용** | 외부 CA 또는 자체 서명 인증서는 사용 불가. 반드시 AWS Private CA에서 발급한 인증서만 사용 가능 |
+| **Subordinate CA 발급** | Root CA가 아닌 **Subordinate CA**에서 발급한 인증서여야 함 |
+| **RSA 키만 지원** | ECDSA 키 알고리즘은 지원하지 않음. RSA 2048 또는 RSA 4096 사용 |
+| **프라이빗 인증서** | ACM의 퍼블릭 인증서(도메인 검증)가 아닌 프라이빗 인증서여야 함 |
+
+> ⚠️ **리전 불일치 오류 예시**:
+> ```
+> Error: Certificate ARN arn:aws:acm:us-west-2:123456789012:certificate/xxx
+> is not in the same region as the customer gateway (ap-northeast-2)
+> ```
+> 이 오류는 인증서가 `us-west-2`에 있고 CGW를 `ap-northeast-2`에서 생성하려 할 때 발생합니다.
+
+> ⚠️ **Cross-Region 구성이 필요한 경우**:
+> - 각 리전마다 별도의 Subordinate CA를 생성하거나
+> - 동일한 Root CA 아래에서 각 리전에 Subordinate CA와 인증서를 발급해야 함
+> - Private CA는 리전 리소스이므로 CA도 해당 리전에 있어야 함
+
+### Customer Gateway 생성 절차
 
 1. AWS Console → **VPC** → **Customer Gateways**
 2. **Create customer gateway** 클릭
@@ -1083,4 +1140,3 @@ clear crypto ikev2 sa
 
 > 본 문서는 AWS 공식 문서와 Cisco 공식 문서를 기반으로 작성되었습니다.
 > 실제 환경에서는 IP 주소, ASN, CIDR 등을 실제 값으로 교체하여 사용하세요.
-# cert-based-s2s-vpn
