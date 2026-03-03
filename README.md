@@ -155,7 +155,7 @@ Customer Gateway 장비(Cisco CSR)에 설치할 인증서를 ACM에서 발급합
 6. 인증서 상태가 `Issued`로 변경되는지 확인
 
 > 📌 이 인증서의 **ARN**을 메모해 두세요. Customer Gateway 생성 시 필요합니다.
-> 예: `arn:aws:acm:ap-northeast-2:123456789012:certificate/abcd-1234-efgh-5678`
+> 예: `arn:aws:acm:REGION:ACCOUNT_ID:certificate/CERTIFICATE_ID`
 
 ---
 
@@ -416,7 +416,7 @@ AWS VPN은 터널 2개를 제공하므로 두 터널 모두 구성합니다.
 
 ---
 
-## 1단계: 개인키 복호화 해제 - filename: private_key.txt
+## 1단계: 개인키 복호화
 
 ACM에서 내보낸 개인키는 passphrase로 암호화되어 있습니다.
 Cisco CSR에 임포트하기 전에 복호화합니다.
@@ -453,7 +453,7 @@ crypto pki trustpoint AWS-ROOT-CA
 crypto pki authenticate AWS-ROOT-CA
 ```
 
-프롬프트가 나타나면 Root CA 인증서 PEM 내용(certificate.txt)을 붙여넣습니다:
+프롬프트가 나타나면 Root CA 인증서 PEM 내용을 붙여넣습니다:
 ```
 -----BEGIN CERTIFICATE-----
 <Root CA 인증서 내용 붙여넣기>
@@ -472,7 +472,7 @@ crypto pki trustpoint AWS-SUB-CA
 crypto pki authenticate AWS-SUB-CA
 ```
 
-Subordinate CA 인증서 PEM() 내용을 붙여넣습니다:
+Subordinate CA 인증서 PEM 내용을 붙여넣습니다:
 ```
 -----BEGIN CERTIFICATE-----
 <Subordinate CA 인증서 내용 붙여넣기>
@@ -494,13 +494,13 @@ crypto pki trustpoint AWS-VPN-CERT
 ```
 crypto pki authenticate AWS-VPN-CERT
 ```
-Subordinate CA 인증서 PEM(을 붙여넣고 `yes`로 수락합니다.
+Subordinate CA 인증서 PEM 내용을 붙여넣고 `yes`로 수락합니다.
 
-그다음 디바이스 인증서와 개인키를 임포트합니다:
+그다음 디바이스 인증서를 임포트합니다:
 ```
 crypto pki import AWS-VPN-CERT certificate
 ```
-디바이스 인증서(Certificate body) PEM을 붙여넣습니다:
+디바이스 인증서(Certificate body) PEM 내용을 붙여넣습니다:
 ```
 -----BEGIN CERTIFICATE-----
 <디바이스 인증서 내용 붙여넣기>
