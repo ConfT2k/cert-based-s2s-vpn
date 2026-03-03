@@ -472,7 +472,7 @@ crypto pki trustpoint AWS-SUB-CA
 crypto pki authenticate AWS-SUB-CA
 ```
 
-Subordinate CA 인증서 PEM 내용을 붙여넣습니다:
+Subordinate CA 인증서 PEM() 내용을 붙여넣습니다:
 ```
 -----BEGIN CERTIFICATE-----
 <Subordinate CA 인증서 내용 붙여넣기>
@@ -494,7 +494,7 @@ crypto pki trustpoint AWS-VPN-CERT
 ```
 crypto pki authenticate AWS-VPN-CERT
 ```
-Subordinate CA 인증서 PEM을 붙여넣고 `yes`로 수락합니다.
+Subordinate CA 인증서 PEM(을 붙여넣고 `yes`로 수락합니다.
 
 그다음 디바이스 인증서와 개인키를 임포트합니다:
 ```
